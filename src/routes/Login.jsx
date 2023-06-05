@@ -1,16 +1,19 @@
-import { useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext } from "react";
 import { UserContext } from "../context/UserProvider";
-import { formValidate } from "../utils/formValidate";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { erroresFirebase } from "../utils/erroresFirebase";
+import { formValidate } from "../utils/formValidate";
 
 import FormError from "../components/FormError";
 import FormInput from "../components/FormInput";
+import Title from "../components/Title";
+import Button from "../components/Button";
+import ButtonLoading from "../components/ButtonLoading";
 
 const Login = () => {
-  const navegate = useNavigate();
-  const { loginUser } = useContext(UserContext);
+  const { loginUser, loading, setLoading } = useContext(UserContext);
+  const navigate = useNavigate();
   const { required, patternEmail, minLength, validateTrim } = formValidate();
 
   const {
@@ -26,40 +29,55 @@ const Login = () => {
   });
 
   const onSubmit = async ({ email, password }) => {
+    setLoading(true);
     try {
       await loginUser(email, password);
-      navegate("/");
+      navigate("/");
     } catch (error) {
-      const { code, message } = erroresFirebase(error);
+      const { code, message } = erroresFirebase(error.code);
       setError(code, { message });
+    } finally {
+      setLoading(false);
     }
   };
 
+  const buttonSubmit = loading ? (
+    <ButtonLoading />
+  ) : (
+    <Button text="Login" type="submit" />
+  );
+
   return (
     <>
-      <h1>Login</h1>
+      <Title title="Login" />
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormInput
+          label="Ingresa tu correo"
           type="email"
-          placeholder="Ingresa un email"
+          placeholder="Ingrese email"
           {...register("email", {
-            required,
-            pattern: patternEmail,
+            required: { value: true, message: "Este campo es requerido" },
+            pattern: { value: patternEmail, message: "Ingresa un email válido" },
           })}
+          error={errors.email}
         >
           <FormError error={errors.email} />
         </FormInput>
+
         <FormInput
+          label="Ingresa contraseña"
           type="password"
-          placeholder="Ingresa un password"
+          placeholder="Ingrese Password"
           {...register("password", {
-            minLength,
-            validate: validateTrim,
+            minLength: { value: minLength, message: "La contraseña debe tener al menos 6 caracteres" },
+            validate: { validateTrim },
           })}
+          error={errors.password}
         >
           <FormError error={errors.password} />
         </FormInput>
-        <button type="submit">Login</button>
+
+        {buttonSubmit}
       </form>
     </>
   );

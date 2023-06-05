@@ -10,19 +10,20 @@ import {
 export const UserContext = createContext();
 
 const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsuscribe = onAuthStateChanged(auth, (user) => {
-      console.log(user);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const { uid, email, photoURL, displayName } = user;
         setUser({ uid, email, photoURL, displayName });
       } else {
         setUser(null);
       }
+      setLoading(false);
     });
-    return () => unsuscribe();
+    return () => unsubscribe();
   }, []);
 
   const registerUser = (email, password) =>
@@ -31,13 +32,19 @@ const UserProvider = ({ children }) => {
   const loginUser = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 
-  const logOutUser = () => signOut(auth);
+  const logoutUser = () => signOut(auth);
+
+  const value = {
+    user,
+    registerUser,
+    loginUser,
+    logoutUser,
+    loading,
+  };
 
   return (
-    <UserContext.Provider
-      value={{ user, setUser, registerUser, loginUser, logOutUser }}
-    >
-      {children}
+    <UserContext.Provider value={value}>
+      {loading ? <p>Loading...</p> : children}
     </UserContext.Provider>
   );
 };
